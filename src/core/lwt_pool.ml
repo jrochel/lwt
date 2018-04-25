@@ -69,6 +69,10 @@ let release p c =
     (* No one is waiting, queue it. *)
     Queue.push c p.list
 
+let add p c =
+  p.count <- p.count + 1;
+  release p c
+
 (* Dispose of a pool member. *)
 let dispose p c =
   p.dispose c >>= fun () ->

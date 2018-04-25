@@ -92,6 +92,12 @@ val clear : 'a t -> unit Lwt.t
 
       Disposals are performed sequentially in an undefined order. *)
 
+val add : 'a t -> 'a -> unit
+  (** By [add p c] you can add an existing resource element [c] to pool [p].
+      This function does perform any verification w.r.t. [p.max]. The maximum
+      number of resources might therefore be exceeded and more than [p.max]
+      elements will be available to the user. *)
+
 val wait_queue_length : _ t -> int
   (** [wait_queue_length p] returns the number of {!use} requests currently
       waiting for an element of the pool [p] to become available. *)
