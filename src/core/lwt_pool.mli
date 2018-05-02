@@ -77,7 +77,7 @@ val create :
       is no longer valid and therefore to be disposed of *)
 exception Resource_invalid
 
-val use : 'a t -> ('a -> 'b Lwt.t) -> 'b Lwt.t
+val use : ?retry:bool -> 'a t -> ('a -> 'b Lwt.t) -> 'b Lwt.t
   (** [use p f] requests one free element of the pool [p] and gives it to
       the function [f]. The element is put back into the pool after the
       promise created by [f] completes.
@@ -86,7 +86,15 @@ val use : 'a t -> ('a -> 'b Lwt.t) -> 'b Lwt.t
       is reached, [use] will wait until one becomes free.
 
       In order to signal that the resource supplied to [f] is no longer valid
-      and to be disposed of, [f] can throw a [Resource_invalid] exception. *)
+      and to be disposed of, [f] can throw a [Resource_invalid] exception.
+
+      If [retry] is set to [true] (default [false]), in case [f] raises a
+      [Resource_invalid] exception [use] will re-attempt to acquire another
+      resource (after disposing the invalid one) and run [f] again on that
+      resource. Be reminded to take into account any side-effects [f] might have
+      had until it raised the exception. Also note that this process may go on
+      indefinitely if [f] keeps on raisid the [Resource_invalid] exception.
+*)
 
 val clear : 'a t -> unit Lwt.t
   (** [clear p] will clear all elements in [p], calling the [dispose] function

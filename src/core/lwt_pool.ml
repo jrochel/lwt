@@ -149,21 +149,25 @@ let check_and_release p c cleared =
 
 exception Resource_invalid
 
-let use p f =
+let use ?(retry = false) p f =
   acquire p >>= fun c ->
   (* Capture the current cleared state so we can see if it changes while this
      element is in use *)
   let cleared = !(p.cleared) in
-  let promise =
+  let rec make_promise () =
     Lwt.catch
       (fun () -> f c)
-      (fun e ->
-         begin match e with
-         | Resource_invalid -> dispose p c
-         | _ -> check_and_release p c !cleared
-         end
-         >>= fun () -> Lwt.fail e)
+      (function
+         | Resource_invalid ->
+             dispose p c >>= fun () ->
+             if retry
+              then make_promise ()
+              else Lwt.fail Resource_invalid
+         | e ->
+             check_and_release p c !cleared >>= fun () ->
+             Lwt.fail e)
   in
+  let promise = make_promise () in
   promise >>= fun _ ->
   if !cleared then (
     (* p was cleared while promise was resolving - dispose of this element *)
